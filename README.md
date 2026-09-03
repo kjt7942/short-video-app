@@ -75,6 +75,18 @@ GitHub: https://github.com/kjt7942/short-video-app
 8. **01:53 — README 작성**
    프로젝트 개요, 화면 흐름, 기술 스택 문서화 후 커밋/푸시.
 
+## 트러블슈팅 · 배운 점
+
+코드에 남긴 근거(주석)를 기준으로 실제 부딪힌 문제와 해결 방식 정리.
+
+- **클립마다 해상도/프레임레이트가 다르면 병합이 깨짐** — 세로 1080p 클립과 가로 720p 클립을 그냥 이어 붙이면 재생이 멈추거나 깨질 수 있어서, `VideoMerger`가 모든 클립을 병합 전에 동일한 `Presentation`(해상도 + fit 모드)으로 강제 통과시키도록 처리(`VideoMerger.kt:28`).
+- **Media3 Transformer는 진행률 콜백을 안 줌** — push 방식 콜백이 없고 polling으로만 진행 상태를 얻을 수 있어서, `VideoMerger`에서 주기적으로 상태를 poll해 진행률(%)을 계산(`VideoMerger.kt:95`).
+- **WorkManager `Data`는 플랫 값만 전달 가능** — 오버레이 리스트는 아이템마다 키프레임 개수가 다른 가변 구조라 WorkManager로 직접 넘길 수 없음. 별도 직렬화 라이브러리를 추가하는 대신 플랫폼 내장 `org.json`으로 JSON 문자열 하나로 말아서 `OverlayExportWorker`에 전달(`OverlaySerialization.kt:9`).
+- **오버레이 좌표계와 Media3 좌표계가 서로 다름** — 에디터는 화면 기준 fractional 좌상단(0~1, y-down) 좌표를 쓰는데 Media3 오버레이 프레임은 NDC(-1~1, 중심 원점, y-up)라서 그대로 넘기면 텍스트/이모지가 위아래로 뒤집힘. 내보내기 시점에 Y축을 반전해서 변환(`OverlayExporter.kt:135`).
+- **카메라 풀스크린 프리뷰인데 내비게이션 바 뒤에 어두운 스크림이 깔림** — 3버튼 내비게이션 모드에서 시스템이 가독성을 위해 자동으로 scrim을 그려서 카메라 화면이 하단만 어둡게 보임. `isNavigationBarContrastEnforced = false` + 라이트 아이콘 강제로 해제(`CameraScreen.kt:131`).
+- **오버레이 편집 중 제스처 충돌** — 텍스트/이모지 칩 위의 드래그·핀치와 배경(영상) 줌·팬 제스처가 겹치면 원치 않는 동작이 발생. 선택된 칩만 자기 제스처를 소비하고, 나머지는 배경으로 흘려보내도록 순서를 분리(`OverlayEditorScreen.kt:321`).
+- **알려진 한계 (다음에 손볼 곳)** — 병합 시 오디오 트랙이 없는 갤러리 클립이 섞이면 concat 동기화가 틀어질 수 있음. 지금은 앱이 직접 찍은 클립(항상 오디오 포함)만 가정하고 있고, 갤러리 클립 지원을 넓히려면 `EditedMediaItemSequence.Builder().setForceAudioTrack(true)`로 교체 필요(`VideoMerger.kt:57`).
+
 ## 최초 기획 스크립트
 
 ### 자료조사용 질문
