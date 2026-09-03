@@ -1,0 +1,23 @@
+*.iml
+.gradle/
+.kotlin/
+/local.properties
+.idea/
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+build_log.txt
+
+# Android Studio / IntelliJ
+*.iws
+*.ipr
+
+# Gradle build outputs
+**/build/
+
+# Keystores (never commit signing keys)
+*.jks
+*.keystore
