@@ -8,96 +8,6 @@ GitHub: https://github.com/kjt7942/short-video-app
 
 카메라 앱을 켜지 않고도, 이 앱 하나로 "여러 개 짧은 클립을 찍고 → 이어 붙이고 → 텍스트/이모지를 원하는 시점·위치에 넣고 → 갤러리에 저장"까지 끝내는 숏폼 제작 도구를 만드는 것이 목표. 편집 프로그램을 따로 켜지 않아도 되는 원스톱 흐름에 집중.
 
-## 구현하려던 주요 기능
-
-- **클립 길이 프리셋 + 커스텀 시간** — 2/3/4초 고정 칩 외에, 사용자가 직접 초를 지정(1~30초)해 최근 2개까지 기억(`DurationPrefs`, SharedPreferences 저장)
-- **자동 종료 촬영** — 선택한 시간이 지나면 자동으로 녹화 중지, 진행률 바·카운트다운 표시
-- **여러 클립 이어 찍기 → 한 편으로 병합** — 클립을 여러 번 찍은 뒤 Media3 Transformer로 순서대로 합치기, 프로세스가 죽어도 이어지도록 WorkManager 백그라운드 처리
-- **오버레이 편집 (텍스트/이모지)** — 병합된 영상 위에 레이어를 올리고 화면에서 직접 드래그·크기 조절
-- **키프레임 애니메이션** — 레이어마다 여러 시점(keyframe)에 위치·크기를 지정하면 그 사이를 자동 보간(linear interpolation)해서 움직이는 오버레이 구현, 레이어별로 노출 구간(start~end)도 별도 설정 가능
-- **오버레이 타임라인 UI** — 여러 레이어의 노출 구간과 키프레임을 한눈에 보고 편집
-- **최종 내보내기 & 저장** — 오버레이까지 합성한 영상을 내보내기 알림과 함께 렌더링하고 MediaStore(갤러리)에 저장
-- **결과 화면** — 저장된 최종 영상 확인, 처음부터 다시 촬영
-
-## 스크린샷
-
-| 촬영 | 클립 병합 | 자막·이모지 오버레이 |
-|---|---|---|
-| ![촬영](screenshots/01_camera.jpg) | ![클립 병합](screenshots/02_merge.jpg) | ![자막·이모지](screenshots/03_overlay.jpg) |
-
-## 화면 흐름
-
-`촬영(Record)` → `병합(Merge)` → `오버레이 편집(Overlay)` → `결과(Result)`
-
-- **CameraScreen** — CameraX 기반 다중 클립 녹화
-- **MergeScreen** — Media3 Transformer로 클립 병합, `MergeWorker`가 백그라운드에서 처리
-- **OverlayEditorScreen** — 병합된 영상 위에 텍스트/스티커 배치, 드래그·스케일 편집, `OverlayExportWorker`로 내보내기
-- **ResultScreen** — 최종 영상 확인 및 미디어스토어 저장
-
-## 기술 스택
-
-- Kotlin, Jetpack Compose (Material3)
-- CameraX 1.4.1 — 영상 촬영
-- Media3 Transformer/Effect 1.5.0 — 병합, 오버레이 렌더링
-- Navigation Compose — 화면 전환
-- WorkManager — 프로세스 종료에도 살아남는 백그라운드 병합/내보내기
-- Accompanist Permissions — 런타임 권한 처리
-
-## 요구 사항
-
-- minSdk 26, targetSdk/compileSdk 35
-- JDK 17
-
-## 빌드
-
-```bash
-./gradlew assembleDebug
-```
-
-## 개발 기록 (2026-09-04)
-
-프로젝트를 처음부터 구성하며 진행한 작업을 시간 순으로 정리.
-
-1. **19:27 ~ 19:38 — 프로젝트 골격 구성**
-   `settings.gradle.kts`, 루트/앱 `build.gradle.kts`, `gradle.properties`, `proguard-rules.pro` 작성. 리소스(`strings.xml`, `colors.xml`, `themes.xml`, 런처 아이콘) 추가.
-2. **19:31 ~ 19:38 — 유틸리티 및 병합 기반 작업**
-   `ExportNotifications`(내보내기 알림), `MergeWorker`(백그라운드 병합), `MediaStoreExport`(미디어스토어 저장), `ResultScreen`, `AppNavHost`, `MainActivity` 작성.
-3. **20:54 — Gradle 래퍼 정리 및 `VideoMerger` 작성**
-   Media3 Transformer 기반 영상 병합 로직 구현.
-4. **22:25 ~ 22:26 — 오버레이 모델/직렬화/내보내기**
-   `OverlayModels`(텍스트·스티커 데이터 모델), `OverlaySerialization`, `OverlayExporter`, `OverlayExportWorker` 작성.
-5. **23:26 ~ 23:55 — 카메라 설정 및 프레임 유틸**
-   `DurationPrefs`(촬영 길이 설정), `VideoFrameUtil`(썸네일 추출), `MergeScreen`(병합 화면 UI) 작성.
-6. **00:24 ~ 01:06 — 오버레이 편집 UI 및 카메라 캡처 완성**
-   `OverlayEditorScreen`(드래그·스케일 편집), `OverlayTimeline`(타임라인 UI), `VideoCaptureManager`(CameraX 녹화), `AndroidManifest.xml`, `CameraScreen` 작성 — 촬영→병합→오버레이→결과 전체 흐름 완성.
-7. **01:52 — Git 저장소 초기화 및 GitHub 푸시**
-   `.gitignore` 추가, 전체 소스 최초 커밋, GitHub(`kjt7942/short-video-app`) public 저장소 생성 후 푸시.
-8. **01:53 — README 작성**
-   프로젝트 개요, 화면 흐름, 기술 스택 문서화 후 커밋/푸시.
-
-## 트러블슈팅 · 배운 점
-
-코드에 남긴 근거(주석)를 기준으로 실제 부딪힌 문제와 해결 방식 정리.
-
-- **클립마다 해상도/프레임레이트가 다르면 병합이 깨짐** — 세로 1080p 클립과 가로 720p 클립을 그냥 이어 붙이면 재생이 멈추거나 깨질 수 있어서, `VideoMerger`가 모든 클립을 병합 전에 동일한 `Presentation`(해상도 + fit 모드)으로 강제 통과시키도록 처리(`VideoMerger.kt:28`).
-- **Media3 Transformer는 진행률 콜백을 안 줌** — push 방식 콜백이 없고 polling으로만 진행 상태를 얻을 수 있어서, `VideoMerger`에서 주기적으로 상태를 poll해 진행률(%)을 계산(`VideoMerger.kt:95`).
-- **WorkManager `Data`는 플랫 값만 전달 가능** — 오버레이 리스트는 아이템마다 키프레임 개수가 다른 가변 구조라 WorkManager로 직접 넘길 수 없음. 별도 직렬화 라이브러리를 추가하는 대신 플랫폼 내장 `org.json`으로 JSON 문자열 하나로 말아서 `OverlayExportWorker`에 전달(`OverlaySerialization.kt:9`).
-- **오버레이 좌표계와 Media3 좌표계가 서로 다름** — 에디터는 화면 기준 fractional 좌상단(0~1, y-down) 좌표를 쓰는데 Media3 오버레이 프레임은 NDC(-1~1, 중심 원점, y-up)라서 그대로 넘기면 텍스트/이모지가 위아래로 뒤집힘. 내보내기 시점에 Y축을 반전해서 변환(`OverlayExporter.kt:135`).
-- **카메라 풀스크린 프리뷰인데 내비게이션 바 뒤에 어두운 스크림이 깔림** — 3버튼 내비게이션 모드에서 시스템이 가독성을 위해 자동으로 scrim을 그려서 카메라 화면이 하단만 어둡게 보임. `isNavigationBarContrastEnforced = false` + 라이트 아이콘 강제로 해제(`CameraScreen.kt:131`).
-- **오버레이 편집 중 제스처 충돌** — 텍스트/이모지 칩 위의 드래그·핀치와 배경(영상) 줌·팬 제스처가 겹치면 원치 않는 동작이 발생. 선택된 칩만 자기 제스처를 소비하고, 나머지는 배경으로 흘려보내도록 순서를 분리(`OverlayEditorScreen.kt:321`).
-- **알려진 한계 (다음에 손볼 곳)** — 병합 시 오디오 트랙이 없는 갤러리 클립이 섞이면 concat 동기화가 틀어질 수 있음. 지금은 앱이 직접 찍은 클립(항상 오디오 포함)만 가정하고 있고, 갤러리 클립 지원을 넓히려면 `EditedMediaItemSequence.Builder().setForceAudioTrack(true)`로 교체 필요(`VideoMerger.kt:57`).
-
-## 향후 계획
-
-- **오디오 트랙 없는 갤러리 클립 대응** — [트러블슈팅](#트러블슈팅--배운-점)에 적어둔 대로, 오디오가 없는 클립이 섞여도 concat이 안 깨지도록 `setForceAudioTrack(true)` 적용
-- **텍스트 스타일 옵션 확대** — 지금은 프리셋 5색만 지원(`OverlayEditorScreen.kt:75`). 폰트/굵기/외곽선(스트로크)/반투명 배경 박스, 커스텀 색상(HSV 피커) 추가
-- **배경음악(BGM) 삽입** — 병합 영상에 오디오 트랙 추가/믹싱 기능
-- **필터/보정** — 밝기·채도 등 기본 영상 필터, Media3 Effect로 확장
-- **오버레이 템플릿 저장/재사용** — 자주 쓰는 자막·이모지 배치를 템플릿으로 저장했다가 다음 영상에 재사용
-- **되돌리기(Undo/Redo)** — 오버레이 편집 중 실수 복구
-- **자동 테스트 추가** — 현재 테스트 코드 없음. `OverlayItem.poseAt` 보간 로직, `VideoMerger` 사양 통일 로직처럼 핵심 로직부터 유닛 테스트 작성
-- **배포 준비** — 릴리즈 서명, 앱 아이콘 다듬기, Play Console 등록
-
 ## 최초 기획 스크립트
 
 ### 자료조사용 질문
@@ -167,3 +77,93 @@ GitHub: https://github.com/kjt7942/short-video-app
 
 **자, 준비가 되었으면 [1단계: CameraX 기반의 기본 녹화 구조 및 UI 설계]부터 시작하자. 먼저 필요한 의존성(Build.gradle) 설정과 카메라 프리뷰용 Composable 기초 코드를 작성해 줘.**
 ```
+
+## 구현하려던 주요 기능
+
+- **클립 길이 프리셋 + 커스텀 시간** — 2/3/4초 고정 칩 외에, 사용자가 직접 초를 지정(1~30초)해 최근 2개까지 기억(`DurationPrefs`, SharedPreferences 저장)
+- **자동 종료 촬영** — 선택한 시간이 지나면 자동으로 녹화 중지, 진행률 바·카운트다운 표시
+- **여러 클립 이어 찍기 → 한 편으로 병합** — 클립을 여러 번 찍은 뒤 Media3 Transformer로 순서대로 합치기, 프로세스가 죽어도 이어지도록 WorkManager 백그라운드 처리
+- **오버레이 편집 (텍스트/이모지)** — 병합된 영상 위에 레이어를 올리고 화면에서 직접 드래그·크기 조절
+- **키프레임 애니메이션** — 레이어마다 여러 시점(keyframe)에 위치·크기를 지정하면 그 사이를 자동 보간(linear interpolation)해서 움직이는 오버레이 구현, 레이어별로 노출 구간(start~end)도 별도 설정 가능
+- **오버레이 타임라인 UI** — 여러 레이어의 노출 구간과 키프레임을 한눈에 보고 편집
+- **최종 내보내기 & 저장** — 오버레이까지 합성한 영상을 내보내기 알림과 함께 렌더링하고 MediaStore(갤러리)에 저장
+- **결과 화면** — 저장된 최종 영상 확인, 처음부터 다시 촬영
+
+## 화면 흐름
+
+`촬영(Record)` → `병합(Merge)` → `오버레이 편집(Overlay)` → `결과(Result)`
+
+- **CameraScreen** — CameraX 기반 다중 클립 녹화
+- **MergeScreen** — Media3 Transformer로 클립 병합, `MergeWorker`가 백그라운드에서 처리
+- **OverlayEditorScreen** — 병합된 영상 위에 텍스트/스티커 배치, 드래그·스케일 편집, `OverlayExportWorker`로 내보내기
+- **ResultScreen** — 최종 영상 확인 및 미디어스토어 저장
+
+## 기술 스택
+
+- Kotlin, Jetpack Compose (Material3)
+- CameraX 1.4.1 — 영상 촬영
+- Media3 Transformer/Effect 1.5.0 — 병합, 오버레이 렌더링
+- Navigation Compose — 화면 전환
+- WorkManager — 프로세스 종료에도 살아남는 백그라운드 병합/내보내기
+- Accompanist Permissions — 런타임 권한 처리
+
+## 요구 사항
+
+- minSdk 26, targetSdk/compileSdk 35
+- JDK 17
+
+## 빌드
+
+```bash
+./gradlew assembleDebug
+```
+
+## 개발 기록 (2026-09-04)
+
+프로젝트를 처음부터 구성하며 진행한 작업을 시간 순으로 정리.
+
+1. **19:27 ~ 19:38 — 프로젝트 골격 구성**
+   `settings.gradle.kts`, 루트/앱 `build.gradle.kts`, `gradle.properties`, `proguard-rules.pro` 작성. 리소스(`strings.xml`, `colors.xml`, `themes.xml`, 런처 아이콘) 추가.
+2. **19:31 ~ 19:38 — 유틸리티 및 병합 기반 작업**
+   `ExportNotifications`(내보내기 알림), `MergeWorker`(백그라운드 병합), `MediaStoreExport`(미디어스토어 저장), `ResultScreen`, `AppNavHost`, `MainActivity` 작성.
+3. **20:54 — Gradle 래퍼 정리 및 `VideoMerger` 작성**
+   Media3 Transformer 기반 영상 병합 로직 구현.
+4. **22:25 ~ 22:26 — 오버레이 모델/직렬화/내보내기**
+   `OverlayModels`(텍스트·스티커 데이터 모델), `OverlaySerialization`, `OverlayExporter`, `OverlayExportWorker` 작성.
+5. **23:26 ~ 23:55 — 카메라 설정 및 프레임 유틸**
+   `DurationPrefs`(촬영 길이 설정), `VideoFrameUtil`(썸네일 추출), `MergeScreen`(병합 화면 UI) 작성.
+6. **00:24 ~ 01:06 — 오버레이 편집 UI 및 카메라 캡처 완성**
+   `OverlayEditorScreen`(드래그·스케일 편집), `OverlayTimeline`(타임라인 UI), `VideoCaptureManager`(CameraX 녹화), `AndroidManifest.xml`, `CameraScreen` 작성 — 촬영→병합→오버레이→결과 전체 흐름 완성.
+7. **01:52 — Git 저장소 초기화 및 GitHub 푸시**
+   `.gitignore` 추가, 전체 소스 최초 커밋, GitHub(`kjt7942/short-video-app`) public 저장소 생성 후 푸시.
+8. **01:53 — README 작성**
+   프로젝트 개요, 화면 흐름, 기술 스택 문서화 후 커밋/푸시.
+
+## 스크린샷
+
+| 촬영 | 클립 병합 | 자막·이모지 오버레이 |
+|---|---|---|
+| ![촬영](screenshots/01_camera.jpg) | ![클립 병합](screenshots/02_merge.jpg) | ![자막·이모지](screenshots/03_overlay.jpg) |
+
+## 트러블슈팅 · 배운 점
+
+코드에 남긴 근거(주석)를 기준으로 실제 부딪힌 문제와 해결 방식 정리.
+
+- **클립마다 해상도/프레임레이트가 다르면 병합이 깨짐** — 세로 1080p 클립과 가로 720p 클립을 그냥 이어 붙이면 재생이 멈추거나 깨질 수 있어서, `VideoMerger`가 모든 클립을 병합 전에 동일한 `Presentation`(해상도 + fit 모드)으로 강제 통과시키도록 처리(`VideoMerger.kt:28`).
+- **Media3 Transformer는 진행률 콜백을 안 줌** — push 방식 콜백이 없고 polling으로만 진행 상태를 얻을 수 있어서, `VideoMerger`에서 주기적으로 상태를 poll해 진행률(%)을 계산(`VideoMerger.kt:95`).
+- **WorkManager `Data`는 플랫 값만 전달 가능** — 오버레이 리스트는 아이템마다 키프레임 개수가 다른 가변 구조라 WorkManager로 직접 넘길 수 없음. 별도 직렬화 라이브러리를 추가하는 대신 플랫폼 내장 `org.json`으로 JSON 문자열 하나로 말아서 `OverlayExportWorker`에 전달(`OverlaySerialization.kt:9`).
+- **오버레이 좌표계와 Media3 좌표계가 서로 다름** — 에디터는 화면 기준 fractional 좌상단(0~1, y-down) 좌표를 쓰는데 Media3 오버레이 프레임은 NDC(-1~1, 중심 원점, y-up)라서 그대로 넘기면 텍스트/이모지가 위아래로 뒤집힘. 내보내기 시점에 Y축을 반전해서 변환(`OverlayExporter.kt:135`).
+- **카메라 풀스크린 프리뷰인데 내비게이션 바 뒤에 어두운 스크림이 깔림** — 3버튼 내비게이션 모드에서 시스템이 가독성을 위해 자동으로 scrim을 그려서 카메라 화면이 하단만 어둡게 보임. `isNavigationBarContrastEnforced = false` + 라이트 아이콘 강제로 해제(`CameraScreen.kt:131`).
+- **오버레이 편집 중 제스처 충돌** — 텍스트/이모지 칩 위의 드래그·핀치와 배경(영상) 줌·팬 제스처가 겹치면 원치 않는 동작이 발생. 선택된 칩만 자기 제스처를 소비하고, 나머지는 배경으로 흘려보내도록 순서를 분리(`OverlayEditorScreen.kt:321`).
+- **알려진 한계 (다음에 손볼 곳)** — 병합 시 오디오 트랙이 없는 갤러리 클립이 섞이면 concat 동기화가 틀어질 수 있음. 지금은 앱이 직접 찍은 클립(항상 오디오 포함)만 가정하고 있고, 갤러리 클립 지원을 넓히려면 `EditedMediaItemSequence.Builder().setForceAudioTrack(true)`로 교체 필요(`VideoMerger.kt:57`).
+
+## 향후 계획
+
+- **오디오 트랙 없는 갤러리 클립 대응** — [트러블슈팅](#트러블슈팅--배운-점)에 적어둔 대로, 오디오가 없는 클립이 섞여도 concat이 안 깨지도록 `setForceAudioTrack(true)` 적용
+- **텍스트 스타일 옵션 확대** — 지금은 프리셋 5색만 지원(`OverlayEditorScreen.kt:75`). 폰트/굵기/외곽선(스트로크)/반투명 배경 박스, 커스텀 색상(HSV 피커) 추가
+- **배경음악(BGM) 삽입** — 병합 영상에 오디오 트랙 추가/믹싱 기능
+- **필터/보정** — 밝기·채도 등 기본 영상 필터, Media3 Effect로 확장
+- **오버레이 템플릿 저장/재사용** — 자주 쓰는 자막·이모지 배치를 템플릿으로 저장했다가 다음 영상에 재사용
+- **되돌리기(Undo/Redo)** — 오버레이 편집 중 실수 복구
+- **자동 테스트 추가** — 현재 테스트 코드 없음. `OverlayItem.poseAt` 보간 로직, `VideoMerger` 사양 통일 로직처럼 핵심 로직부터 유닛 테스트 작성
+- **배포 준비** — 릴리즈 서명, 앱 아이콘 다듬기, Play Console 등록
