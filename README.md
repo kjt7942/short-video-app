@@ -19,6 +19,12 @@ GitHub: https://github.com/kjt7942/short-video-app
 - **최종 내보내기 & 저장** — 오버레이까지 합성한 영상을 내보내기 알림과 함께 렌더링하고 MediaStore(갤러리)에 저장
 - **결과 화면** — 저장된 최종 영상 확인, 처음부터 다시 촬영
 
+## 스크린샷
+
+| 촬영 | 클립 병합 | 자막·이모지 오버레이 |
+|---|---|---|
+| ![촬영](screenshots/01_camera.jpg) | ![클립 병합](screenshots/02_merge.jpg) | ![자막·이모지](screenshots/03_overlay.jpg) |
+
 ## 화면 흐름
 
 `촬영(Record)` → `병합(Merge)` → `오버레이 편집(Overlay)` → `결과(Result)`
