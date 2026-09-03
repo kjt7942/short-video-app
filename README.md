@@ -1,5 +1,7 @@
 # ShortsApp
 
+GitHub: https://github.com/kjt7942/short-video-app
+
 여러 클립 촬영 → 병합 → 오버레이(텍스트/스티커) 편집 → 내보내기까지 지원하는 Android 숏폼 비디오 앱.
 
 ## 목적
